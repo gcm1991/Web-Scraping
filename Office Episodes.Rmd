@@ -1,0 +1,126 @@
+---
+title: "Webscraping IMBD Ratings of The Office Episodes"
+output: html_notebook
+---
+
+The Office is an extremely popular American Sitcom. The show was based on a 
+British show of the same name, and features a "mockumentary" style in which a 
+crew documents the lives of ordinary American workers at a paper company. The 
+show centers on the Regional Manager "Michael Scott" (Steve Carell). Michael is 
+a clueless boss and is convinced that all his employees love him. The employees, 
+however, are not amused by Michael's absurd and sometimes offensive antics. 
+
+Steve Carell left the Office in Season 7. The show aired for 2 more seasons after
+his departure. Using data that I webscraped from IMBD I am interested in how Steve
+Carrells departure from the show effected the ratings. 
+
+```{r}
+rm(list = ls())
+
+library(rvest)
+library(ggplot2)
+
+```
+
+Using the rvest library, I scrape data from IMBD, extracting the episode name, year, and rating.
+
+```{r}
+# Scraping Imbd ratings for "The Office" from the Web
+url <- "https://www.imdb.com/search/title/?series=tt0386676&view=simple&count=250&sort=user_rating,desc"
+webpage <- read_html(url)
+
+# Using Rvest and CSS selector extension I locate the node in the html and extract the text
+
+# Get the rating
+ratings <- html_elements(webpage, ".col-imdb-rating")
+as.numeric(html_text(ratings, trim = TRUE)) #convert it to numeric data
+
+# Getting the episode name
+episode <- html_elements(webpage, ".unbold+ a")
+html_text(episode)
+
+# Getting the year 
+year <- html_elements(webpage, ".unbold~ .text-muted")
+html_text(year)
+
+
+```
+I then put the scraped information in a dataframe suitable for visualization and analysis. 
+
+```{r}
+# Put the scraped elements in a new data frame
+office_data <- data.frame(html_text(episode), 
+                            as.numeric(html_text(ratings, trim = TRUE)),
+                            html_text(year))
+
+# give sensible names to the dat frame
+names(office_data) <- c("episode", "rating", "year")
+```
+
+IMBD site does not have info on whether Michael Scott was in a particular episode.
+Using my own knowledge of the show, I created a variable that tracks whether Michael
+was in the show. Michael was in every episode for the first 6 seasons. These seasons
+correspond to the years 2005 - 2010. Michael was in most of the episodes for season 7,
+and returned for the finale in season 9. Because these episodes do not cleanly 
+correspond to years I created a short list of Michael Episodes that were not 
+captured by the years.
+
+```{r}
+# Create a variable tracking if the character "Michael Scott" was in the episode
+
+office_data$michael_scott <- "No"
+
+# Create a character vector for the years and episodes the Micheal was in
+michael_scott_years <- c("(2005)", "(2006)", "(2007)", "(2008)", "(2009)", "(2010)")
+michael_scott_episodes <- c("Finale", "Goodbye, Michael", "Garage Sale", "Threat Level Midnight",
+                            "Michael's Last Dundies", "The Search", "PDA", "Ultimatum",
+                            "Training Day", "The Seminar", "Todd Packer")
+
+
+# I index the data checking to see if the row was in one of these character vectors
+# and change the Michael Scott status to "Yes" accordingly 
+office_data$michael_scott[office_data$year %in% michael_scott_years] <- "Yes"
+office_data$michael_scott[office_data$episode %in% michael_scott_episodes] <- "Yes"
+```
+
+First I am interested in the overall rating based on Michael Scott's character.
+Statistical analysis reveals that episodes with Michael in them had an average
+rating of 8.26 and that episodes without had an average of 7.55. This is nearly 
+a 1 point difference on a scale of 10, and is statistically significant p < 0.001.
+
+```{r}
+ggplot(data = office_data, mapping = aes(x = michael_scott, y = rating)) +
+  geom_boxplot() +
+  xlab("Michael Scott in the Episode?") +
+  ylab("IMBD Rating") +
+  ggtitle("The Office Episode Ratings")
+
+t.test(office_data$rating ~ office_data$michael_scott)
+
+
+```
+
+I was also interested in how the show fared overtime. Many fans - myself included - 
+consider seasons 2-4 to be the golden era of The office. Season 8, the first season
+without Michael, is often considered to be a lowpoint in the series. 
+
+
+```{r}
+ggplot(data = office_data, mapping = aes(x = year, y = rating)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013"), name = "Year") +
+  ylab("IMBD Ratng") +
+  ggtitle("Ratings of The Office by Year")
+```
+Although the years do not perfectly correspond to the seasons (Most season span over 
+two calendar years) this graph reflects the traditional wisdom. Years 2006 - 2009, which 
+encompass seasons 2-5 experience the highest average ratings. Meanwhile year 2012, which
+had most of season 8 episodes, is a low point on the graph. 
+
+While The Office endend on a strong note - the finale was one of the highest rated episodes -
+the show did suffer from the departure of it's main character. Using web-scraping methods
+we can see that the episodes and years without Michael Scott had significantly lower
+ratings on average. 
+
+
+
