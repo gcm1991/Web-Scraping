@@ -11,6 +11,10 @@ Texas Election Results:
 
 This project required election data in Texas. What was tricky about scraping this website is that the data wasn't just sitting on the page; Instead the user needed to provide information (county) and click 'search' to update the website. The necessitated more complex code that looped through all Texas counties and dynamically filled out forms, reading each search result to it's own table and later merging the tables. 
 
+School Voting Place:
+
+One of my professors was interested in how voting location might relate to vote choice. The Harris County citizens were assigned a school to vote at based on their home address. In order to find their assigned voting location a citizen would need to go to a website and enter their address. My professor had a list of everyone who voted and their addresses, and he needed me to automate the process of identifying which school they voted at based on their address. To accomplish this I had to use a special JSON URL that I located in the network section of inspect element.   
+
 Webscraping the Office:
 https://htmlpreview.github.io/?https://github.com/gcm1991/Web-Scraping/blob/main/Office%20Episodes.nb.html
 
